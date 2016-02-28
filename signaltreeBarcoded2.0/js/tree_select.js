@@ -514,10 +514,29 @@ var treeSelect = function(){
 				//d3.select(this).classed("selected", true);
 			})
 			.on("dblclick",function(d,i){
+
+				var clickIndex = +d.index;
+				update_inner_top_right_description(clickIndex);
+
+
 				var selectedID = +d.index;
+				
 				if (compareArray.indexOf(selectedID) < 0){
 					compareArray[1] = selectedID;
 				} 
+				
+
+				/*
+				if (compareArray.indexOf(selectedID) < 0){
+					if(changeA){
+						compareArray[1] = selectedID; 
+					}else{
+						compareArray[0] = selectedID; 
+					}
+				} 
+				*/
+
+
 				compareNum = selectedID;
 				changeComparedData(compareNum);
 				d3.select("#append-rect").select("#percen-rect").remove();
