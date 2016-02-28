@@ -108,9 +108,47 @@ var treeSelect = function(){
 		}
 	});
 
-	$('#help').click(function(){
 
+
+
+	$('#help').click(function(){
+		console.log("!!!")
+		$("#dialog-confirm").dialog("open");
+		//d3.select("body").append("div")
 	});
+
+	$("#dialog-confirm").dialog
+	({
+		width:"1300",
+		height:"800",
+        modal: true,             // 创建模式对话框
+        autoOpen: false,         // 只初始化，不显示
+
+
+        buttons: {
+	        "Back": function() {
+
+	        	d3.selectAll(".help_img").remove()
+	        	$( ".help_document" ).append( 
+	        		"<img src=\"helpdocument/signal_tree_interface_intro.png\" class=\"help_img\" width=\"1200px\" >"
+	        		);
+
+	        	
+
+	        	//$(this).dialog('close');
+	        },
+	        "Next": function() {
+	        	d3.selectAll(".help_img").remove()
+	        	$( ".help_document" ).append( 
+	        		"<img src=\"helpdocument/signal_tree.png\" class=\"help_img\" width=\"700px\" >"
+	        		);
+
+	            //$(this).dialog('close');
+	        }
+	     }
+
+    });
+
 
 	var viewWidth = +(d3.select("#srocllDiv").style("width").replace("px",""));
 	var fontSize = Math.round(viewWidth / 18);
