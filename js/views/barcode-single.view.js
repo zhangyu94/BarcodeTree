@@ -65,11 +65,10 @@ define([
 	        //'highlightCousin':false,//标记mouseover时是否highlightcousin
 	        //'squarenumOfColumn'
 
-	        var colorOfLevel = Variables.get("colorOfLevel");
 	        var compressBarcodeMode = Variables.get('compressBarcodeMode');//标记当前处在barcode的完全展开或者压缩状态
 	        //1.1 当前的barcode的基本数据
 			var linearTree = self.model.get("barcodeSingleDataArray");
-			var barcodeIndex = self.model.get("barcodeIndex");
+			var treeIndex = self.model.get("barcodeIndex");
 			//1.2 画非压缩状态的barcode需要的位置信息
 			var barcodeSingleLocation = self.model.get("barLocationArray");
 			if (linearTree.length != barcodeSingleLocation.length)//校验
@@ -82,8 +81,8 @@ define([
 			var barcodeCollection = window.Datacenter.barcodeCollection;
 			var uniontreeReducedSizeXYposition = barcodeCollection.uniontreeReducedSizeXYposition;
 			
-			draw_pure_barcode(gPureBarcode,self,barcodeIndex,compressBarcodeMode,colorOfLevel,linearTree,barcodeSingleLocation,unionTree,barcodeCollection,uniontreeReducedSizeXYposition);
-			function draw_pure_barcode(gPureBarcode,self,barcodeIndex,compressBarcodeMode,colorOfLevel,linearTree,barcodeSingleLocation,unionTree,barcodeCollection,uniontreeReducedSizeXYposition)
+			draw_pure_barcode(gPureBarcode,self,treeIndex,compressBarcodeMode,linearTree,barcodeSingleLocation,unionTree,barcodeCollection,uniontreeReducedSizeXYposition);
+			function draw_pure_barcode(gPureBarcode,self,treeIndex,compressBarcodeMode,linearTree,barcodeSingleLocation,unionTree,barcodeCollection,uniontreeReducedSizeXYposition)
 			{
 				var drawnDataArray = compressBarcodeMode ? unionTree : linearTree;//真正用于绑定bar的数据
 				var locationArray = compressBarcodeMode ? uniontreeReducedSizeXYposition : barcodeSingleLocation;//真正用于决定位置的数组
@@ -93,7 +92,7 @@ define([
 				 	.offset([-10, 0])
 				  	.html(function(d,i) {
 				    	return 	"Name:<span style='color:red'>" + d.name +"</span>" +
-				    			"Value:<span style='color:red'>" + d3.format(".3s")(d.trees_values[barcodeIndex]) + "bytes" +"</span>" +
+				    			"Value:<span style='color:red'>" + d3.format(".3s")(d.trees_values[treeIndex]) + "bytes" +"</span>" +
 				    			"Depth:<span style='color:red'>" + d._depth + "</span>" +
 				    		 	"Index:<span style='color:red'>" + d.linear_index + "</span>" +
 				    		 	"Same pattern number:<span style='color:red'>" + d.maximum_continuous_repeat_group_size + "</span>"
@@ -105,6 +104,29 @@ define([
 				.data(drawnDataArray)
 				.enter()
 				.append('rect')
+				.attr('class',function(d,i){
+					return classHandler(d,treeIndex);
+					function classHandler(d,tree_index){
+						var virtualDescription = Variables.get('virtualNodeDescription');
+						var mode = (d.description != virtualDescription) ? 'existed' : 'nonexisted';
+						var fatherIndex = (typeof(d._father) != 'undefined') ? d._father.linear_index : -1;
+
+						return  'linear_index-' + d.linear_index +
+								' tree_index-' + tree_index + 
+								' fatherIndex-' + fatherIndex +
+							    ' _depth-' + d._depth + 
+							    ' nth_different_subtree-' + d.nth_different_subtree + 
+								' route-' + d.route + 
+								' mode-' + mode;
+					}
+				})
+				.attr('id',function(d,i){
+					return idHandler(d,treeIndex);
+					function idHandler(d,tree_index){
+						var id = 'linear_index-' + d.linear_index + "tree_index-" + tree_index;
+						return id;
+					}
+				})
 				.attr('x',function(d,i){
 					return +locationArray[i].x;
 				})
@@ -118,7 +140,21 @@ define([
 					return +locationArray[i].width;
 				})
 				.attr('fill',function(d,i){
-					return colorOfLevel[d._depth];
+					return fillHandler(d,i,treeIndex);
+					function fillHandler(d,i,treeIndex){
+						var colorOfLevel = Variables.get("colorOfLevel");
+						var removeColor = Variables.get("removeColor");
+						var virtualDescription = Variables.get('virtualNodeDescription');
+						
+						//如果有数值，那一定是在这棵树上存在的现实结点
+						if (d.trees_values[treeIndex] != 0)
+							return colorOfLevel[+d._depth];
+						//如果没有数值，而且description是virtualDescription，说明是这棵树的虚拟结点，对于虚拟结点中可以作为模式结点的点，仍然应该有颜色
+						else if (d.description == virtualDescription && d.continuous_repeat_time == 1 && d.maximum_continuous_repeat_group_size != 1)
+							return colorOfLevel[+d._depth];
+						else
+							return removeColor;
+					}
 				})
 				.on('mouseover',function(d,i){
 					barcodeTip.show(d,i);
@@ -128,12 +164,12 @@ define([
 				});
 			}
 		
-			draw_index_box(svg,barcodeIndex);
+			draw_index_box(svg,treeIndex);
 			/*
 			* @function: drawIndex绘制barcode tree 前面的index rect以及index
 			* @parameter: null
 			*/
-			function draw_index_box(svg,barcodeIndex){
+			function draw_index_box(svg,treeIndex){
 				var rectHeight = Variables.get("barHeight");
 				var originIndexX = Variables.get("indexBoxLeftPadding");
 				var indexBoxWidth = Variables.get("indexBoxWidth");
@@ -142,10 +178,10 @@ define([
 				var indexTextX1 = originIndexX + indexBoxWidth / 4;
 				var indexTextX2 = originIndexX + indexBoxWidth / 16;
 				var indexTextY = indexRectBeginY + rectHeight * 5 / 8;
-				svg.select('#group-' + barcodeIndex).remove();
+				svg.select('#group-' + treeIndex).remove();
 
 				var indexGroup = svg.append('g')
-					.attr('id','group-' + barcodeIndex)
+					.attr('id','group-' + treeIndex)
 					.attr('transform',"translate(0," + Variables.get('barcodeupperPadding') + ")");
 
 				indexGroup.append('rect')
@@ -161,7 +197,7 @@ define([
 						d3.select(this).classed('this-highlight',false);
 					});
 				
-				var indexText = barcodeIndex;
+				var indexText = treeIndex;
 				indexGroup.append('text')
 						.attr('class', 'index-text')
 						.attr('x',function(){
@@ -177,7 +213,7 @@ define([
 			
 			if (compressBarcodeMode == true)
 			{
-				draw_pattern_bg(gPureBarcode,uniontreeReducedSizeXYposition,barcodeIndex,unionTree);
+				draw_pattern_bg(gPureBarcode,uniontreeReducedSizeXYposition,treeIndex,unionTree);
 			}
 			function draw_pattern_bg(gPureBarcode,originNodeArray,index,unionLinearTree){
 				var barInterval = Variables.get("barInterval");
@@ -224,6 +260,132 @@ define([
 							}
 						});
 					}
+				}
+			}
+
+
+
+			
+
+
+			function mouseover_drawlink(d)
+			{
+				var thisIndex = d.linear_index;
+				var linearTreeEle = linear_tree[thisIndex];
+				//分别得到自己节点，上溯根节点的父亲节点
+				var thisElement = svg.select('#bar-id' + thisIndex + "rect_background_index-" + cur_tree_index + "-" + svg_id);
+				var linkArray = [];
+				if(($("#state-change").hasClass("active")) && (linearTreeEle.continuous_repeat_time >= 2)){
+					thisIndex = linearTreeEle.pattern_index;
+					thisElement = svg.select('#bar-id' + thisIndex + "rect_background_index-" + cur_tree_index + "-" + svg_id);
+				}
+				linkArray.push(thisElement);
+				linkFuncTop(thisIndex, linkArray, linear_tree, svg_id);
+				//linkFuncBottom(thisIndex, linkArray, cur_tree_index, linear_tree, svg_id);
+				for(var j = 0;j < linkArray.length;j++){
+					linkArray[j].classed('dim',false);
+					linkArray[j].classed('cousin-highlight',false);
+					linkArray[j].classed('sibiling-highlight',false);
+					linkArray[j].classed('link-node-highlight',true);
+				}
+				if($("#state-change").hasClass("active")){
+					svg.selectAll('.barcode-bg-' + index + '-' + svg_id).classed('pattern-bg-remove',true);
+				}
+				d3.select(this_element).classed('link-node-highlight',true);
+				d3.select(this_element).classed('dim',false);
+				if(($("#state-change").hasClass("active")) && linearTreeEle.pattern_index != 'none' 
+						&& linearTreeEle.pattern_index != undefined){
+					//将pattern的虚拟节点的所有节点进行高亮
+					for(var j = +linearTreeEle.pattern_index;;j++){
+						if(linear_tree[j].description != 'virtual'){
+							break;
+						}
+						console.log(svg.select('#bar-id' + j + "rect_background_index-" + cur_tree_index + "-" + svg_id));
+						svg.select('#bar-id' + j + "rect_background_index-" + cur_tree_index + "-" + svg_id)
+							.classed('dim',false);
+						svg.select('#bar-id' + j + "rect_background_index-" + cur_tree_index + "-" + svg_id)
+							.classed('link-node-highlight',true);//link-node-highlight
+					}
+					//将barcode的背景去除
+					svg.selectAll('.barcode-bg-' + index + '-' + svg_id).classed('pattern-bg-remove',true);
+				}
+				draw_link(linkArray, svg_id);
+				/*
+				* @linkFuncTop: 获取从根节点到某个节点路径上面的节点
+				* @parameter: this_index 表示的计算的节点的index值， link_array 表示的是存储的节点的数组
+				*/
+				function linkFuncTop(this_index, link_array, linear_tree, svg_id){
+					var svg = d3.select("#" + svg_id);
+					var thisIndex = this_index;
+					var linkArray = link_array;
+					var thisNode = linear_tree[thisIndex];
+					if(thisNode._father != undefined){
+						var fatherIndex = thisNode._father.linear_index;
+						var fatherElement = svg.select('#bar-id' + fatherIndex + 'rect_background_index-' + cur_tree_index + '-' + svg_id);
+						linkArray.push(fatherElement);
+						linkFuncTop(fatherIndex, linkArray, linear_tree, svg_id);
+					}
+					return;
+				}
+				/*
+				* @linkFuncBottom: 获取从某个节点到最低层次的路径上面的节点，对于上面的方法得到的数组进行补充
+				* @parameter: this_index 表示要计算的中心节点的index值， link_array 表示的是存储的节点的数组
+				*/
+				function linkFuncBottom(this_index, link_array, cur_tree_index, linear_tree, svg_id){
+					var svg = d3.select("#" + svg_id);
+					var thisIndex = this_index;
+					var linkArray = link_array;
+					var curTreeIndex = cur_tree_index;
+					var thisNode = linear_tree[thisIndex];
+					var childIndex = 0;
+					if(thisNode.children != undefined){
+						if($("#state-change").hasClass("active")){
+							childIndex = thisNode.children[0].linear_index;
+						}else{
+							/*if(thisNode.children[0].description == 'virtual'){
+								childIndex = thisNode.children[1].linear_index;
+							}else{
+								childIndex = thisNode.children[0].linear_index;
+							}*/
+							childIndex = thisNode.min_index_array[curTreeIndex + 1];
+						}
+						var childElement = svg.select('#bar-id' + childIndex + 'rect_background_index-' + cur_tree_index + '-' + svg_id);
+						linkArray.push(childElement);
+						linkFuncBottom(childIndex, linkArray, curTreeIndex, linear_tree, svg_id);
+					}
+				}	
+
+				//element_array可以是数字，里面每个元素都是jquery选中的rect的
+				function draw_link(element_array, gPureBarcode)
+				{
+					var lineLink = '';
+					var formerX = 0;
+					var lineGroup = gPureBarcode.append('g').attr('class','line');
+					for(var i = 0;i < element_array.length;i++){
+						var element = element_array[i];
+						var thisWidth = +element.attr("width");
+						var thisX = +element.attr("x");
+						var thisY = +element.attr("y");
+						var thisHeight = +element.attr("height");
+						var thisCircleX = thisX + thisWidth / 2;
+						var thisCircleY = thisY + thisHeight / 2;
+						var thisCircleR = thisWidth / 4;
+						var disX = thisX - formerX;
+						lineGroup.append('circle')
+							.attr('class','center-circle')
+							.attr('cx',thisCircleX)
+							.attr('cy',thisCircleY)
+							.attr('r',thisCircleR);
+						if(i == 0){
+							lineLink = lineLink + 'M' + thisCircleX + ',' + thisCircleY;
+						}else{
+							lineLink = lineLink + 'L' + thisCircleX + ',' + thisCircleY;
+						}
+					}
+					lineGroup.append("path")
+				   	//.datum(d3.range(points))
+					.attr("class", 'line-link')
+			   		.attr("d", lineLink);
 				}
 			}
 
@@ -419,50 +581,7 @@ define([
 
 
 
-			/*
-			* @function: classHandler 返回某一节点的class值
-			* @parameter: d, i, tree_index表示的是绘制的是哪一个barcode
-			*/
-			function classHandler(d,i,tree_index){
-				var mode = 'existed';
-				if(d.description == 'virtual'){
-					mode = 'nonexisted'
-				}
-				var treeIndex = tree_index;
-				var fatherIndex = -1;
-				if(d._father!=undefined){
-					fatherIndex = d._father.linear_index;
-				}
-				return  'bar-class' + 
-						' bar-id' + d.linear_index +
-						' bar-class-' + treeIndex + 
-					    ' num-' + d._depth + 'father-' + fatherIndex + "bg-" + treeIndex + 
-						" num-" + d._depth + '-' + treeIndex +
-						' num-' + d._depth + 
-						' father-' + fatherIndex + "rect_background_index-" + treeIndex + 
-						" father-" + fatherIndex + "subtree-" + d.nth_different_subtree + "rect_background_index-" + treeIndex + 
-						" rect_background_index-" + treeIndex +
-						" " + d.route + "-bg-" + treeIndex + 
-						" " + svg_id +
-						' ' + mode;
-			}
-			/*
-			* @function: idHandler 返回某一节点的id值
-			* @parameter: d, i, tree_index表示的是绘制的是哪一个barcode
-			*/
-			function idHandler(d,i,tree_index){
-				var treeIndex = tree_index;
-				var id = 'bar-id' + d.linear_index + "rect_background_index-" + treeIndex
-						+ '-' + svg_id;
-				//将continuous_repeat_time为2的节点存储下来，在存储的节点的基础上面append rect
-				var barId = 'bar-id' + d.linear_index;
-				if(d.continuous_repeat_time == 2){
-					if(repeat2Array.indexOf(barId) == -1){
-						repeat2Array.push(barId);
-					}
-				}
-				return id;
-			}
+			
 			/*
 			* @function: fillHandler判断bar的颜色的函数(对于reduce模式与origin模式是相同的)
 			* @parameter: d,i,cur_tree_index d3原始的参数以及当前绘制的树的index值
@@ -628,33 +747,6 @@ define([
 					}
 					return;
 				}
-				/*
-				* @linkFuncBottom: 获取从某个节点到最低层次的路径上面的节点，对于上面的方法得到的数组进行补充
-				* @parameter: this_index 表示要计算的中心节点的index值， link_array 表示的是存储的节点的数组
-				*/
-				function linkFuncBottom(this_index, link_array, cur_tree_index, linear_tree, svg_id){
-					var svg = d3.select("#" + svg_id);
-					var thisIndex = this_index;
-					var linkArray = link_array;
-					var curTreeIndex = cur_tree_index;
-					var thisNode = linear_tree[thisIndex];
-					var childIndex = 0;
-					if(thisNode.children != undefined){
-						if($("#state-change").hasClass("active")){
-							childIndex = thisNode.children[0].linear_index;
-						}else{
-							/*if(thisNode.children[0].description == 'virtual'){
-								childIndex = thisNode.children[1].linear_index;
-							}else{
-								childIndex = thisNode.children[0].linear_index;
-							}*/
-							childIndex = thisNode.min_index_array[curTreeIndex + 1];
-						}
-						var childElement = svg.select('#bar-id' + childIndex + 'rect_background_index-' + cur_tree_index + '-' + svg_id);
-						linkArray.push(childElement);
-						linkFuncBottom(childIndex, linkArray, curTreeIndex, linear_tree, svg_id);
-					}
-				}	
 			}
 			/*
 			* @function: mouseoutHandler 鼠标hover离开的响应事件(origin模式)

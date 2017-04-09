@@ -46,6 +46,7 @@ define([
             'indexBoxBarcodeDist':10,//barcode和barcode左侧的indexbox的距离
             'patternbgVerticalPadding':2,//pattern的背景的上侧和下侧的padding的高度
             'barcodeupperPadding':2,//一个barcode的group与其所在的那块svg的上边界的距离
+            'removeColor': "#EEEEEE",//不在这棵树存在，或者是非模式的虚拟结点的结点的颜色
             
             //histogram需要的变量
             'histogramSortMode' : 'time',//取"time"或"value"
