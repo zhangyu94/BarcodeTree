@@ -1,0 +1,6 @@
+#barcode-main-view .index-rect/*barcode左边的index方块*/
+{
+  fill:white;
+  stroke: black !important;
+  stroke-width: 2px;
+}

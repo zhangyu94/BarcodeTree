@@ -1,0 +1,104 @@
+#barcode-panel{
+	background-color: white;
+	display: inline;
+	#depth-change{
+		background-color: @barcode-panel-color;
+		height: 100%;
+		float:left;
+		left: 0px;
+		width: @barcode-panel-depth-change-width;
+		margin-right: @padding-div;
+		text-align: center;
+		#state-change{
+			position: relative;
+			top: 50%;
+  			transform: translateY(-50%);
+		}
+		#selectable{
+			position: relative;
+			.ui-selectee {
+				position: relative;
+				background: white; 
+				top: 50%;
+  				transform: translateY(-50%);
+			}
+		}
+	}
+	//------------------------------
+	#node-select{
+		float:left;
+		left: @barcode-panel-node-select-left;
+		width: @barcode-panel-node-select-width;
+		margin-left: @padding-div;
+		margin-right: @padding-div;
+		background-color: @barcode-panel-color;
+		height: 100%;
+		text-align: center;
+		#checkbox_group{
+			position: relative;
+			width: 100%;
+			height: 100%;
+  			.highlight_control{
+  				position: relative;
+  				width: 40%;
+  				top: 50%;
+  				transform: translateY(-50%);
+  			}
+		}
+	}
+	//------------------------------
+	#width-height-controller{
+		float: left;
+		height: 100%;
+		left: @barcode-panel-wh-controller-left;
+		width: @barcode-panel-wh-controller-width;
+		margin-left: @padding-div;
+		margin-right: @padding-div;
+		background-color: @barcode-panel-color;
+		text-align: center;
+
+		.btn-group{
+			top: 50%;
+  			transform: translateY(-50%);
+			#width-menu {
+				position: absolute; 
+				width: 160px; 
+				opacity:0.8;
+				.menu-item-text{
+					margin-left: 10px;
+					text-align: center;
+					vertical-align: middle;
+				}
+				.menu-item{
+					vertical-align: middle;
+					height:30px;
+					.width-item {
+						height:10px;
+						top:-4px;
+						width:100px; 
+					    float:right;
+					    margin-top:10px;
+					    margin-right:10px;
+					}
+				}
+			}
+		}
+		.btn-group{
+			top: 50%;
+  			transform: translateY(-50%);
+			#height-menu { 
+				position: absolute; 
+				width: 110px; 
+				opacity:0.8;
+				.height-item {
+					width:110px; 
+				    float:left;
+				    margin-left: 30px;
+				    margin-top:10px;
+				    margin-bottom: 10px;
+				}
+			}
+		}
+	}
+}
+

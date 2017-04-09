@@ -1,83 +1,43 @@
-(function() {
-    this.dataCenter = {};
-})();
+require.config({
+    paths: {
+        // libs loader
+        'text': '../bower_components/requirejs-text/text',
+        
+        'jquery': ['../bower_components/jquery/dist/jquery.min'],
+        'jquery-ui':['../bower_components/jquery-ui/jquery-ui'],
+        'underscore': ['../bower_components/underscore/underscore-min'],
+        'bootstrap': ['../bower_components/bootstrap/dist/js/bootstrap.min'],
+        'backbone': ['../bower_components/backbone/backbone-min'],
+        'nprogress': ['../bower_components/nprogress/nprogress'],
+        'marionette': ['../bower_components/marionette/lib/backbone.marionette.min'],
+        'backbone.relational': ['../bower_components/backbone-relational/backbone-relational'],
+        'd3': ['../bower_components/d3/d3'],
+        'd3Tip': ['../bower_components/d3-tip/d3-tip'],
+        'highstock': ['../bower_components/highstock/highstock'],
 
-var mainController = function(){
-    var treeSelectView, radialView, treeCompareView, parsetView;
-    var datasetID = [];
-    function loadStatData() {
-        var dtd = $.Deferred();
-        d3.json("stat.json", function(error, data){
-            if (error) {
-                dtd.reject();
-                throw error;
-            }
-            else {
-                dataCenter.stats = data;
-            }
-            dtd.resolve();
+        'backbone.routefilter': '../bower_components/backbone.routefilter/dist/backbone.routefilter.min',
+        "reconnectingWebSocket":'../bower_components/reconnecting-websocket/reconnecting-websocket',
+
+        // templates path
+        'templates': '../templates',
+
+        'communicator':'controller/communicator',
+        'datacenter': 'models/datacenter.model',
+        'config': 'models/config.model',
+        'variables': 'models/variables.model',
+        'barcodeCollection':'collections/barcode.collection'
+    }
+});
+
+//在外面的require的内容加在完以后，才会加载内部的require中的内容
+require(['jquery', 'underscore', 'd3'], function($, _, d3) {
+    'use strict';
+    require(['backbone', 'bootstrap', 'highstock', 'd3Tip'], function(Backbone, Bootstrap, BsDatapicker, d3Tip, barcodeCollection) {
+        require(['app'], function (App) { // require.js shim不能与cdn同用,因此3层require,非amd module需要如此
+            $(document).ready(function(){
+                var app = new App();
+                app.start();
+            });
         });
-        return dtd.promise();
-    }
-
-    function initInteractionHandler() {
-        ObserverManager.addListener(this);
-    }
-    dataCenter.datasets = [];
-    this.OMListen = function(message, data) {
-        if (message == "addData") {
-            var id = data;
-            var processor = new sigtree.dataProcessor();
-            var dataset = {
-                id: id,
-                processor: processor
-            }
-            dataCenter.datasets.push(dataset);
-            dataCenter.datasets.sort(function(obj1,obj2){
-                return obj1.id - obj2.id;
-            })
-            var file = dataCenter.stats[id].file;
-            file = "data/" + file;
-            var defers = dataset.processor.loadData(file);
-            $.when(defers)
-                .done(function() {
-                    //var listeners = _.without(ObserverManager.getListeners(), radialView, treeCompareView, parsetView); //remove old views in listeners
-                    //ObserverManager.setListeners(listeners);
-                    console.log(dataCenter.datasets);
-                    radial(dataCenter.datasets);
-                    //for(var i = 0; i < dataCenter.datasets.length; i++){
-                        //radial(i);
-                    //}
-                });
-        }else if(message == "removeData"){
-            var id = data;
-            var processor = new sigtree.dataProcessor();
-            var dataset = {
-                id: id,
-                processor: processor
-            }
-            for(var i = 0;i < dataCenter.datasets.length;i++){
-                if(id == dataCenter.datasets[i].id){
-                    dataCenter.datasets.splice(i,1);
-                         d3.select('#radial')
-                            .selectAll(".rect_background_index-"+i)
-                            .remove();
-                    break;
-                }
-            }
-            radial(dataCenter.datasets);
-        }
-    }
-    initInteractionHandler();
-    $.when(loadStatData())
-        .done(function() {
-            treeSelectView = treeSelect();         
-        })
-
-}
-
-$(document).ready(function() {
-    mainController();
-})
-
-
+    });
+});
